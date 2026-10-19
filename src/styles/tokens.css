@@ -1,0 +1,50 @@
+/* 設計基礎：docs/design.md 第 2 節。元件裡不要直接寫色碼，請用這些變數。 */
+:root {
+  --bg: #F5F2FB;
+  --surface: #FFFFFF;
+  --ink: #2A2535;
+  --muted: #6A6280;
+  --line: #E4DEF2;
+  --line-strong: #D3C9EA;
+  --accent: #7C5CC4;
+  --accent-pressed: #6A4BB3;
+  --accent-disabled: #A994DC;
+  --link: #6A4BB3;
+  --link-hover: #4F3590;
+  --mine: #E9E0FA;
+  --mine-line: #D8CBF3;
+  --mention-chip: #ECE4FB;
+  --mention-row: #FBE6F4;
+  --tint: #F1EBFC;
+  --tint-soft: #F8F5FD;
+  --disabled-bg: #E4DEF2;
+  --disabled-ink: #8C85A0;
+  --danger: #A3261A;
+  --danger-bg: #FBE9E7;
+  --danger-line: #E2B7AF;
+  --warn-bg: #FFF1D6;
+  --warn-ink: #6B4300;
+  --ok-bg: #E3EFE6;
+  --ok-ink: #24583A;
+  --demo-bg: #E7DFF6;
+  --demo-ink: #463A63;
+  --scrim: rgba(42, 37, 53, 0.42);
+  --shadow: 0 10px 28px rgba(42, 37, 53, 0.14);
+  --viewer-bg: #15131C;
+
+  /* 直接畫在背景上的字。成員選了很深的自訂背景時，會自動換成淺色（src/lib/theme.ts） */
+  --on-bg-ink: var(--ink);
+  --on-bg-muted: var(--muted);
+  --on-bg-line: var(--line);
+
+  --font: 'Noto Sans TC', system-ui, -apple-system, 'PingFang TC', 'Microsoft JhengHei', sans-serif;
+
+  --r-control: 14px;
+  --r-bubble: 16px;
+  --r-pill: 999px;
+  --r-sheet: 22px;
+  --r-dialog: 20px;
+
+  --tap: 44px;
+  --topbar-h: 60px;
+}
