@@ -1,4 +1,4 @@
-import { createClient, SupabaseClient, RealtimeChannel } from '@supabase/supabase-js';
+﻿import { createClient, SupabaseClient, RealtimeChannel } from '@supabase/supabase-js';
 import type { ChatService } from '../ChatService';
 import {
   ChatEventName,
@@ -61,7 +61,7 @@ export class SupabaseChatService implements ChatService {
     });
 
     this.channel
-      .on('broadcast', { event: 'system_leave' }, ({ payload }) => {
+      .on('broadcast', { event: 'system_leave' }, ({ payload }: { payload: any }) => {
         if (payload && payload.nickname) {
           this.emit('message:new', payload as SystemMessage);
         }
@@ -87,8 +87,8 @@ export class SupabaseChatService implements ChatService {
         }
         this.emit('presence:sync', this.getOnlineUsers());
       })
-      .on('presence', { event: 'join' }, ({ newPresences }) => {
-        for (const p of newPresences as any[]) {
+      .on('presence', { event: 'join' }, ({ newPresences }: { newPresences: any[] }) => {
+        for (const p of newPresences) {
           const u = p?.user;
           if (u && u.userId !== this.currentUserId && u.nickname) {
             const sysMsg: SystemMessage = {
@@ -102,8 +102,8 @@ export class SupabaseChatService implements ChatService {
           }
         }
       })
-      .on('presence', { event: 'leave' }, ({ leftPresences }) => {
-        for (const p of leftPresences as any[]) {
+      .on('presence', { event: 'leave' }, ({ leftPresences }: { leftPresences: any[] }) => {
+        for (const p of leftPresences) {
           const u = p?.user;
           if (u && u.nickname) {
             const sysMsg: SystemMessage = {
@@ -120,14 +120,14 @@ export class SupabaseChatService implements ChatService {
       .on(
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'messages' },
-        (payload) => {
+        (payload: any) => {
           const row = payload.new as any;
           const msg: UserMessage = {
             id: row.id,
             kind: 'user',
             createdAt: row.created_at || new Date().toISOString(),
             authorId: row.author_id || 'unknown',
-            nickname: row.nickname || '匿名',
+            nickname: row.nickname || '\u533f\u540d',
             isAdmin: Boolean(row.is_admin),
             text: row.content || '',
             image: row.image_url
@@ -143,14 +143,14 @@ export class SupabaseChatService implements ChatService {
       .on(
         'postgres_changes',
         { event: 'UPDATE', schema: 'public', table: 'messages' },
-        (payload) => {
+        (payload: any) => {
           const row = payload.new as any;
           const msg: UserMessage = {
             id: row.id,
             kind: 'user',
             createdAt: row.created_at || new Date().toISOString(),
             authorId: row.author_id || 'unknown',
-            nickname: row.nickname || '匿名',
+            nickname: row.nickname || '\u533f\u540d',
             isAdmin: Boolean(row.is_admin),
             text: row.content || '',
             image: row.image_url
@@ -163,7 +163,7 @@ export class SupabaseChatService implements ChatService {
           this.emit('message:updated', msg);
         }
       )
-      .subscribe((status) => {
+      .subscribe((status: string) => {
         if (status === 'SUBSCRIBED') {
           if (this.me) this.channel?.track({ user: this.me });
           this.status = 'online';
@@ -192,7 +192,7 @@ export class SupabaseChatService implements ChatService {
           payload: sysMsg,
         });
       } catch (e) {
-        console.warn('廣播離開失敗', e);
+        console.warn('leave broadcast failed', e);
       }
 
       await this.channel.untrack();
@@ -218,7 +218,7 @@ export class SupabaseChatService implements ChatService {
       kind: 'user' as const,
       createdAt: row.created_at || new Date().toISOString(),
       authorId: row.author_id || 'unknown',
-      nickname: row.nickname || '匿名',
+      nickname: row.nickname || '\u533f\u540d',
       isAdmin: Boolean(row.is_admin),
       text: row.content || '',
       image: row.image_url
@@ -268,7 +268,10 @@ export class SupabaseChatService implements ChatService {
       .select()
       .single();
 
-    if (error || !data) { console.error("[Supabase sendMessage error]:", error); return fail('network'); }
+    if (error || !data) {
+      console.error('[Supabase sendMessage error]:', error);
+      return fail('network');
+    }
 
     const message: UserMessage = {
       id: data.id,
@@ -297,7 +300,7 @@ export class SupabaseChatService implements ChatService {
       .select()
       .single();
 
-    if (error || !data) { console.error("[Supabase sendMessage error]:", error); return fail('network'); }
+    if (error || !data) return fail('network');
 
     const msg: UserMessage = {
       id: data.id,
@@ -325,7 +328,7 @@ export class SupabaseChatService implements ChatService {
       .select()
       .single();
 
-    if (error || !data) { console.error("[Supabase sendMessage error]:", error); return fail('network'); }
+    if (error || !data) return fail('network');
 
     const msg: UserMessage = {
       id: data.id,
