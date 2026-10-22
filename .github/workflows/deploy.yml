@@ -1,9 +1,10 @@
-# 每次 push 到 main：測試 → 打包 → 發布到 GitHub Pages（架構文件第 12 節）
+# 每次 push：測試 → 打包 → 檢查打包結果。只有 main 會發布到 GitHub Pages（架構文件第 12 節）
+# 其他分支只跑測試和打包，用來先確認沒有問題再合併。
 name: Deploy to GitHub Pages
 
 on:
   push:
-    branches: [main]
+    branches: ['**']
   workflow_dispatch:
 
 permissions:
@@ -12,7 +13,7 @@ permissions:
   id-token: write
 
 concurrency:
-  group: pages
+  group: pages-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -23,23 +24,36 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: lts/*
+          cache: npm
       - name: 安裝套件
-        # 有 package-lock.json 就照它裝（版本固定）；還沒有的話先用 npm install
-        run: if [ -f package-lock.json ]; then npm ci; else npm install; fi
+        run: npm ci
       - name: 自動測試（失敗就不發布）
         run: npm test
       - name: 打包
         run: npm run build
         env:
-          # 階段二才需要；沒設定時打包出來的就是示範版
+          # 正式版的三個值放在 repo 的 Settings → Secrets and variables → Actions → Variables
+          # 沒設定時打包出來的就是示範版
           VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
           VITE_SUPABASE_PUBLISHABLE_KEY: ${{ vars.VITE_SUPABASE_PUBLISHABLE_KEY }}
           VITE_VAPID_PUBLIC_KEY: ${{ vars.VITE_VAPID_PUBLIC_KEY }}
+      - name: 檢查打包結果
+        # 擋住「網站變空白頁」和「安全規則被拿掉」這兩種曾經發生過的問題
+        run: |
+          grep -q 'assets/index-' dist/index.html || { echo '::error::dist/index.html 沒有載入打包後的程式'; exit 1; }
+          ! grep -q '/src/main.tsx' dist/index.html || { echo '::error::dist/index.html 還在載入原始碼 /src/main.tsx'; exit 1; }
+          grep -q 'Content-Security-Policy' dist/index.html || { echo '::error::dist/index.html 少了 CSP（架構文件 9.1）'; exit 1; }
+          ! grep -rqE 'sb_secret_|service_role' dist || { echo '::error::打包結果裡出現了不能公開的金鑰'; exit 1; }
+          echo "打包結果正常（模式：$([ -n "$VITE_SUPABASE_URL" ] && echo 正式版 || echo 示範版)）"
+        env:
+          VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
       - uses: actions/upload-pages-artifact@v3
+        if: github.ref == 'refs/heads/main'
         with:
           path: dist
 
   deploy:
+    if: github.ref == 'refs/heads/main'
     needs: build
     runs-on: ubuntu-latest
     environment:

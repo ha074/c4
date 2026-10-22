@@ -43,7 +43,7 @@ export function NotifySettings({ service, mode, myNickname, onModeChange, onClos
         setPushNote(
           service.mode === 'demo'
             ? '分頁在背景時會跳通知。網頁關掉後的推播：示範模式不支援。'
-            : '分頁在背景時會跳通知。這個瀏覽器不支援網頁關掉後的推播。',
+            : '分頁在背景時會跳通知。網頁關掉後的推播還在準備中。',
         );
       else if (push.code === 'permission_denied') setPermission('denied');
     }
