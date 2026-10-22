@@ -74,6 +74,7 @@ export class SupabaseChatService implements ChatService {
   private admin = false;
   private status: ConnectionStatus = 'connecting';
   private heartbeatTimer: ReturnType<typeof setInterval> | null = null;
+  private heartbeatWorker: Worker | null = null;
   private presenceTimer: ReturnType<typeof setTimeout> | null = null;
   /** 線上名單：最後一次在 Presence 看到的時間（斷線 10 秒內先不拿掉，架構文件 6.3） */
   private readonly seen = new Map<Id, { user: PresencePayload; at: number }>();
@@ -158,7 +159,11 @@ export class SupabaseChatService implements ChatService {
     return list;
   }
 
-  async sendMessage(input: SendInput): Promise<Result<ChatMessage, SendError>> {
+  sendMessage(input: SendInput): Promise<Result<ChatMessage, SendError>> {
+    return this.sendNow(input, false);
+  }
+
+  private async sendNow(input: SendInput, retried: boolean): Promise<Result<ChatMessage, SendError>> {
     if (!this.me) return fail('network');
     if ([...input.text].length > RULES.messageMax) return fail('too_long');
 
@@ -199,7 +204,8 @@ export class SupabaseChatService implements ChatService {
           this.onKicked(result.until ?? null);
           return fail('banned', result.until ?? null);
         case 'nickname_lost':
-          this.onNicknameLost();
+          // 只重試一次，避免伺服器一直回同樣的答案時無限重試
+          if (!retried && (await this.tryRejoin()) && this.me) return this.sendNow(input, true);
           return fail('network');
         default:
           return fail('network');
@@ -422,23 +428,58 @@ export class SupabaseChatService implements ChatService {
 
   private startHeartbeat(): void {
     this.stopHeartbeat();
-    this.heartbeatTimer = setInterval(() => void this.heartbeat(), HEARTBEAT_MS);
+    // 分頁在背景時，網頁裡的計時器會被瀏覽器放慢到一分鐘一次，心跳就會超過 60 秒的期限。
+    // 所以優先用 Worker 計時（public/heartbeat-worker.js）；不支援時才用一般的計時器。
+    try {
+      const worker = new Worker(`${import.meta.env.BASE_URL}heartbeat-worker.js`);
+      worker.onmessage = () => void this.heartbeat();
+      worker.postMessage({ type: 'start', intervalMs: HEARTBEAT_MS });
+      this.heartbeatWorker = worker;
+    } catch {
+      this.heartbeatTimer = setInterval(() => void this.heartbeat(), HEARTBEAT_MS);
+    }
   }
 
   private stopHeartbeat(): void {
     if (this.heartbeatTimer) clearInterval(this.heartbeatTimer);
     this.heartbeatTimer = null;
+    this.heartbeatWorker?.terminate();
+    this.heartbeatWorker = null;
   }
 
-  /** 回傳 false 代表已經不在聊天室裡了（代號被拿走或被踢） */
+  /** 回傳 false 代表已經不在聊天室裡了（被踢、或代號被別人拿走） */
   private async heartbeat(): Promise<boolean> {
     if (!this.me) return false;
     const { data, error } = await this.supabase.rpc('heartbeat');
     const result = data as RpcResult | null;
     if (error || !result) return true; // 網路問題：下次再試
     if (result.ok) return true;
+    if (result.code === 'banned') {
+      this.onKicked(result.until ?? null);
+      return false;
+    }
+    if (result.code === 'nickname_lost') return this.tryRejoin();
+    return true;
+  }
+
+  /**
+   * 伺服器已經釋放了我的代號（例如手機切到別的 App 太久）。
+   * 代號還沒被別人用：自動恢復，其他人會看到「進入了聊天室」；被別人用了：回到進入畫面（架構文件 6.4、13.2）。
+   */
+  private async tryRejoin(): Promise<boolean> {
+    const me = this.me;
+    if (!me) return false;
+    const { data, error } = await this.supabase.rpc('join_room', { p_nickname: me.nickname });
+    const result = data as RpcResult | null;
+    if (error || !result) return true; // 網路問題：下次再試
+    if (result.ok) {
+      if (this.channel && this.channelJoined()) {
+        void this.channel.track({ userId: me.userId, nickname: me.nickname, isAdmin: me.isAdmin });
+      }
+      return true;
+    }
     if (result.code === 'banned') this.onKicked(result.until ?? null);
-    else if (result.code === 'nickname_lost') this.onNicknameLost();
+    else this.onNicknameLost();
     return false;
   }
 
