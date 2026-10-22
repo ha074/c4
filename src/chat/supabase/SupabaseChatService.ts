@@ -131,6 +131,8 @@ export class SupabaseChatService implements ChatService {
 
     await this.subscribe(session.access_token);
     this.startHeartbeat();
+    // 私人頻道剛連上的頭幾秒，資料庫的廣播偶爾會漏：5 秒後補抓一次
+    setTimeout(() => void this.catchUp(), 5_000);
     return ok(this.meAsOnlineUser());
   }
 
@@ -403,6 +405,15 @@ export class SupabaseChatService implements ChatService {
     if (!this.me) return;
     const alive = await this.heartbeat();
     if (!alive || !this.me) return;
+    await this.catchUp();
+    if (this.channel && this.status === 'online') {
+      void this.channel.track({ userId: this.me.userId, nickname: this.me.nickname, isAdmin: this.me.isAdmin });
+    }
+  }
+
+  /** 把資料庫裡最近的訊息和畫面上的比一比，補上漏掉的、更新改過的 */
+  private async catchUp(): Promise<void> {
+    if (!this.me) return;
     const recent = await this.loadRecentForCatchUp();
     for (const m of recent) {
       const before = this.known.get(m.id);
@@ -410,9 +421,6 @@ export class SupabaseChatService implements ChatService {
       if (before === now) continue;
       this.known.set(m.id, now);
       this.emitter.emit(before ? 'message:updated' : 'message:new', m);
-    }
-    if (this.channel && this.status === 'online') {
-      void this.channel.track({ userId: this.me.userId, nickname: this.me.nickname, isAdmin: this.me.isAdmin });
     }
   }
 
