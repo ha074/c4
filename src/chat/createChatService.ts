@@ -5,7 +5,9 @@
  * |-----------------------------------|--------|
  * | 沒有設定 Supabase 的網址和金鑰      | 示範版 |
  * | 有設定                             | 正式版 |
- * | 網址加上 ?demo                     | 強制使用示範版 |
+ * | 網址加上 ?demo（只在 npm run dev）   | 強制使用示範版 |
+ *
+ * 正式網站（main 分支）沒設定 Supabase 時，部署流程會直接失敗，不會發布示範版。
  *
  * 畫面層只拿到 ChatService 這個介面，不知道背後是哪一個版本。
  */
@@ -20,7 +22,8 @@ export function createChatService(): ChatService {
   if (instance) return instance;
 
   const params = new URLSearchParams(window.location.search);
-  const forceDemo = params.has('demo');
+  // ?demo 只在自己電腦開發（npm run dev）時有用；正式網站一律用正式版
+  const forceDemo = import.meta.env.DEV && params.has('demo');
   const url = (import.meta.env.VITE_SUPABASE_URL as string | undefined)?.trim();
   const key = (import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string | undefined)?.trim();
 

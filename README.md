@@ -6,7 +6,7 @@
 - 架構：[`docs/architecture.md`](docs/architecture.md)
 - 畫面設計：[`docs/design.md`](docs/design.md)
 
-目前在**階段二**：正式版通訊層和資料庫 SQL 已經寫好，Supabase 那邊設定完成前，網站會自動以示範版運作（同一個瀏覽器的分頁之間互傳訊息）。
+目前在**階段二**：網站已經接上 Supabase，是真正跨裝置的聊天室（沒有示範模式）。
 
 網站：https://ha074.github.io/c4/
 
@@ -22,7 +22,7 @@ npm run build      # 打包成要放上 GitHub Pages 的檔案（放在 dist/）
 npm run preview    # 預覽打包後的版本
 ```
 
-## 怎麼測試示範版
+## 怎麼測試示範版（只在自己電腦 `npm run dev` 時）
 
 | 想看什麼 | 怎麼做 |
 |---|---|
@@ -50,7 +50,7 @@ npm run preview    # 預覽打包後的版本
 
    這兩個值本來就會出現在公開的網頁裡，所以放 Variables 不放 Secrets。**Secret key（`sb_secret_…`）絕對不要放。**
 6. 到 repo 的 **Actions** 分頁，對最新一筆「Deploy to GitHub Pages」按 **Re-run all jobs**，1～2 分鐘後網站就是正式版。
-   網址加 `?demo` 可以隨時強制看示範版。
+   正式網站不會有示範模式；只有在自己電腦上 `npm run dev` 時，網址加 `?demo` 才會用示範版。
 
 還沒做的：網頁關掉也收得到的推播（Web Push、VAPID 金鑰、Edge Function `send-push`），以及每天刪 7 天前圖片檔的 Edge Function `cleanup`。
 7 天前的訊息由資料庫排程每天自動刪除。

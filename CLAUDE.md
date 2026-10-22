@@ -10,8 +10,8 @@
 
 目前在**階段二**（接上 Supabase），進行中：
 
-- 已完成：正式版通訊層 `src/chat/supabase/`、資料庫 SQL `supabase/migrations/0001_chat.sql`。
-- 還沒做：在 Supabase 後台執行那份 SQL、建立管理員帳號、設定 GitHub Variables（設定前網站一直是示範版）、Web Push 和兩個 Edge Function。
+- 已完成：正式版通訊層 `src/chat/supabase/`、資料庫（`supabase/migrations/0001_chat.sql` 已在後台執行）、Realtime 只允許私人頻道、GitHub Variables。正式網站不提供示範模式。
+- 還沒做：建立管理員帳號（要使用者自己設密碼）、Web Push 和兩個 Edge Function。
 - 步驟見 `README.md` 的「接上 Supabase」；完成標準見 `docs/architecture.md` 第 13.2 節。
 - 不使用 Supabase CLI：SQL 一律貼到後台 SQL Editor 執行。
 

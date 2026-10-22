@@ -45,6 +45,10 @@ jobs:
           grep -q 'Content-Security-Policy' dist/index.html || { echo '::error::dist/index.html 少了 CSP（架構文件 9.1）'; exit 1; }
           # 只找「真的金鑰」：supabase-js 本身的程式裡就有 sb_secret_ 這幾個字（用來拒絕在瀏覽器裡用祕密金鑰）
           ! grep -rqE 'sb_secret_[A-Za-z0-9_-]{16,}' dist || { echo '::error::打包結果裡出現了不能公開的金鑰'; exit 1; }
+          # 正式網站不發布示範版：main 一定要有 Supabase 設定
+          if [ "$GITHUB_REF" = "refs/heads/main" ] && [ -z "$VITE_SUPABASE_URL" ]; then
+            echo '::error::main 沒有設定 VITE_SUPABASE_URL（Settings → Secrets and variables → Actions → Variables），不發布示範版'; exit 1
+          fi
           echo "打包結果正常（模式：$([ -n "$VITE_SUPABASE_URL" ] && echo 正式版 || echo 示範版)）"
         env:
           VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
