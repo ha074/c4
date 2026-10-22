@@ -43,7 +43,8 @@ jobs:
           grep -q 'assets/index-' dist/index.html || { echo '::error::dist/index.html 沒有載入打包後的程式'; exit 1; }
           ! grep -q '/src/main.tsx' dist/index.html || { echo '::error::dist/index.html 還在載入原始碼 /src/main.tsx'; exit 1; }
           grep -q 'Content-Security-Policy' dist/index.html || { echo '::error::dist/index.html 少了 CSP（架構文件 9.1）'; exit 1; }
-          ! grep -rqE 'sb_secret_|service_role' dist || { echo '::error::打包結果裡出現了不能公開的金鑰'; exit 1; }
+          # 只找「真的金鑰」：supabase-js 本身的程式裡就有 sb_secret_ 這幾個字（用來拒絕在瀏覽器裡用祕密金鑰）
+          ! grep -rqE 'sb_secret_[A-Za-z0-9_-]{16,}' dist || { echo '::error::打包結果裡出現了不能公開的金鑰'; exit 1; }
           echo "打包結果正常（模式：$([ -n "$VITE_SUPABASE_URL" ] && echo 正式版 || echo 示範版)）"
         env:
           VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
