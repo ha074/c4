@@ -8,8 +8,12 @@
 
 ## 目前進度
 
-目前在**階段一**：只做前端（示範模式），還沒有接上 Supabase。
-階段一的範圍和完成標準見 `docs/architecture.md` 第 4.1 節和第 13.1 節。
+目前在**階段二**（接上 Supabase），進行中：
+
+- 已完成：正式版通訊層 `src/chat/supabase/`、資料庫 SQL `supabase/migrations/0001_chat.sql`。
+- 還沒做：在 Supabase 後台執行那份 SQL、建立管理員帳號、設定 GitHub Variables（設定前網站一直是示範版）、Web Push 和兩個 Edge Function。
+- 步驟見 `README.md` 的「接上 Supabase」；完成標準見 `docs/architecture.md` 第 13.2 節。
+- 不使用 Supabase CLI：SQL 一律貼到後台 SQL Editor 執行。
 
 ## 金鑰規則
 
